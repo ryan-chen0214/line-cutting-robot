@@ -81,7 +81,7 @@ void enter_length(){
             }else if(temp_key == 'A'){
               break;
             }else if(temp_key == 'B'){
-              index--;
+              if(index >= 0 ) index--;
               lcd.setCursor(index , 1);
               lcd.print("                 ");
               len[index] = '\0';
