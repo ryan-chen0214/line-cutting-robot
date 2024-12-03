@@ -29,7 +29,9 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 const int stepPin = 44;  
 const int dirPin = 45;
 AccelStepper stepper(1, stepPin, dirPin); 
-int length;
+
+int length = 0;
+int quantity = 0;
 
 void Roll_out();
 void enter_length();
@@ -50,6 +52,11 @@ void setup() {
 
 void loop() {
   enter_length();
+  enter_quantity();
+  for(int i = 0 ; i < quantity ; i++){
+    Roll_out();
+    delay(2000);
+  }
 }
 
 
@@ -61,12 +68,12 @@ void Roll_out(){
 }
 
 void enter_length(){
-    char len[4];
+    char len[10];
     int index = 0;
     while(1){
         char temp_key = keypad.getKey();
         lcd.setCursor(0 , 0);
-        lcd.print("Enter Length : ");
+        lcd.print("Enter Length :");
         // lcd.setCursor(5 , 1);
         // lcd.print("A to confirm");
         if(temp_key){
@@ -79,7 +86,45 @@ void enter_length(){
                 lcd.print(len);
                 index++;
             }else if(temp_key == 'A'){
-              break;
+              for(int i = 0 ; i <= index ; i++){
+                length = length * 10 + int(len[i] - '0');
+              }
+              return 0;
+            }else if(temp_key == 'B'){
+              if(index >= 0 ) index--;
+              lcd.setCursor(index , 1);
+              lcd.print("                 ");
+              len[index] = '\0';
+              Serial.println(len);
+              lcd.print(len);
+            }
+        }
+    }
+}
+
+void enter_quantity(){
+    char len[10];
+    int index = 0;
+    while(1){
+        char temp_key = keypad.getKey();
+        lcd.setCursor(0 , 0);
+        lcd.print("Enter Quantity :");
+        // lcd.setCursor(5 , 1);
+        // lcd.print("A to confirm");
+        if(temp_key){
+            lcd.setCursor(0 , 1);
+            Serial.println(temp_key);
+            if(temp_key >= '0' && temp_key <= '9'){
+                len[index] = temp_key;
+                len[index + 1] = '\0';
+                Serial.println(len);
+                lcd.print(len);
+                index++;
+            }else if(temp_key == 'A'){
+              for(int i = 0 ; i <= index ; i++){
+                quantity = quantity * 10 + int(len[i] - '0');
+              }
+              return 0;
             }else if(temp_key == 'B'){
               if(index >= 0 ) index--;
               lcd.setCursor(index , 1);
