@@ -2,6 +2,7 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h> 
 #include <Keypad.h>
+#include <Servo.h>
 
 
 #define motorInterfaceType AccelStepper::DRIVER
@@ -19,20 +20,22 @@ char keys[ROWS][COLS] = {
 };
 
 
-byte rowPins[ROWS] = {11, 10, 9, 8};    
-byte colPins[COLS] = {7, 6, 5, 4};   
+byte rowPins[ROWS] = {13, 12, 11, 10};    
+byte colPins[COLS] = {5, 4, 3, 2};   
 
 
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
+Servo cutting_servo;
 
-const int stepPin = 44;  
-const int dirPin = 45;
+
+const int stepPin = 7;  
+const int dirPin = 6;
 AccelStepper stepper(1, stepPin, dirPin); 
 
-int length = 0;
+float length = 0;
 int quantity = 0;
-const int length_coefficient = 100;
+const float length_coefficient = 1 / 0.0385; //可能要再找到比較精準的常數
 
 void Roll_out();
 void lcd_enter_length();
@@ -51,6 +54,8 @@ void setup() {
   lcd.init();
   lcd.backlight();
 
+  cutting_servo.attach(9);
+  cutting_servo.write(0);
 }
 
 void loop() {
@@ -61,13 +66,22 @@ void loop() {
   for(int i = 0 ; i < quantity ; i++){
     lcd_now_cutting(quantity - i);
     Roll_out();
-    delay(2000);
+    cutting_servo.write(70);
+    delay(1000);
+    cutting_servo.write(0);
+    delay(1000);
   }
+  length = 0;
+  quantity = 0;
+  lcd.setCursor(0 , 1);
+  lcd.print("                ");
 }
 
 
 void Roll_out(){
-    stepper.move(length * length_coefficient);
+    stepper.move(- (int)(length * length_coefficient));
+    Serial.println(length);
+    Serial.println((int)(length * length_coefficient));
     while(stepper.distanceToGo() != 0){
       stepper.run();
     }
@@ -92,7 +106,7 @@ void lcd_enter_length(){
             lcd.print(len);
             index++;
         }else if(temp_key == 'A'){
-          for(int i = 0 ; i <= index ; i++){
+          for(int i = 0 ; i < index ; i++){
             length = length * 10 + (int)(len[i] - '0');
           }
           return 0;
@@ -129,7 +143,7 @@ void lcd_enter_quantity(){
             lcd.print(len);
             index++;
         }else if(temp_key == 'A'){
-          for(int i = 0 ; i <= index ; i++){
+          for(int i = 0 ; i < index ; i++){
             quantity = quantity * 10 + (int)(len[i] - '0');
           }
           return 0;
@@ -150,14 +164,11 @@ void lcd_now_cutting(int numbers_left){
   lcd.print("# left :          ");
   lcd.setCursor(0 , 1);
   char quant[16] = "                ";
-  int index = 0;
+  int digit = log10(numbers_left);
+  for(int i = digit ; i >= 0 ; i--){
+        quant[i] = numbers_left % 10 + '0';
+        numbers_left = numbers_left / 10;
+    }
   Serial.println(numbers_left);
-  while(numbers_left > 0){
-    quant[index + 2] = '\0';
-    quant[index + 1] = quant[index];
-    quant[index] = (char)((numbers_left % 10) + '0');
-    numbers_left = numbers_left / 10;
-    index++;
-  }
   lcd.print(quant);
 }
